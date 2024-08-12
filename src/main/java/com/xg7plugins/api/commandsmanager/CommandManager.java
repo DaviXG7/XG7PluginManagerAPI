@@ -2,6 +2,8 @@ package com.xg7plugins.api.commandsmanager;
 
 import com.xg7plugins.api.XG7PluginManager;
 import com.xg7plugins.api.Config;
+import com.xg7plugins.api.commandsmanager.defaultCommands.BugsCommand;
+import com.xg7plugins.api.commandsmanager.defaultCommands.SuggestCommand;
 import lombok.SneakyThrows;
 import org.bukkit.Bukkit;
 import org.bukkit.command.*;
@@ -22,8 +24,12 @@ public class CommandManager implements CommandExecutor, TabCompleter {
 
     private static final List<com.xg7plugins.api.commandsmanager.Command> plCommands = new ArrayList<>();
 
+    public static void initDefaultCommands() {
+        new CommandManager().init(new BugsCommand(), new SuggestCommand());
+    }
+
     @SneakyThrows
-    public final void init(com.xg7plugins.api.commandsmanager.Command... commands) {
+    public void init(com.xg7plugins.api.commandsmanager.Command... commands) {
 
         Field commandMapField = Bukkit.getServer().getClass().getDeclaredField("commandMap");
         commandMapField.setAccessible(true);
