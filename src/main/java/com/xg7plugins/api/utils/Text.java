@@ -1,8 +1,6 @@
 package com.xg7plugins.api.utils;
 
 import com.xg7plugins.api.Config;
-import com.xg7plugins.xg7lobby.data.ConfigType;
-import com.xg7plugins.xg7lobby.data.handler.Config;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import me.clip.placeholderapi.PlaceholderAPI;

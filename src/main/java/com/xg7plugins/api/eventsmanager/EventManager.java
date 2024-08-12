@@ -37,17 +37,19 @@ public class EventManager implements Listener {
                         event1.priority(),
                         (listener, event2) -> {
                             try {
-                                if (event2 instanceof PlayerEvent) {
-                                    PlayerEvent playerEvent = (PlayerEvent) event2;
-                                    if (!XG7PluginManager.getWorldsEnabled().contains(playerEvent.getPlayer().getWorld().getName())) return;
-                                }
-                                if (event2 instanceof WorldEvent) {
-                                    WorldEvent worldEvent = (WorldEvent) event2;
-                                    if (!XG7PluginManager.getWorldsEnabled().contains(worldEvent.getWorld().getName())) return;
-                                }
-                                if (event2 instanceof BlockEvent) {
-                                    BlockEvent blockEvent = (BlockEvent) event2;
-                                    if (!XG7PluginManager.getWorldsEnabled().contains(blockEvent.getBlock().getWorld().getName())) return;
+                                if (method.getAnnotation(Event.class).isOnlyInWorld()) {
+                                    if (event2 instanceof PlayerEvent) {
+                                        PlayerEvent playerEvent = (PlayerEvent) event2;
+                                        if (!XG7PluginManager.getWorldsEnabled().contains(playerEvent.getPlayer().getWorld().getName())) return;
+                                    }
+                                    if (event2 instanceof WorldEvent) {
+                                        WorldEvent worldEvent = (WorldEvent) event2;
+                                        if (!XG7PluginManager.getWorldsEnabled().contains(worldEvent.getWorld().getName())) return;
+                                    }
+                                    if (event2 instanceof BlockEvent) {
+                                        BlockEvent blockEvent = (BlockEvent) event2;
+                                        if (!XG7PluginManager.getWorldsEnabled().contains(blockEvent.getBlock().getWorld().getName())) return;
+                                    }
                                 }
                                 method.invoke(e, event2);
                             } catch (Exception exception) {

@@ -1,0 +1,11 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="XG7PluginsManager">
+    <output-path>$PROJECT_DIR$/out/artifacts/XG7PluginsManager</output-path>
+    <root id="archive" name="XG7PluginsManager.jar">
+      <element id="module-output" name="XG7PluginManagerAPI" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/../XG7MenusAPI/out/artifacts/XG7MenusAPI/XG7MenusAPI.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/com/github/ben-manes/caffeine/caffeine/2.8.0/caffeine-2.8.0.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/org/mariadb/jdbc/mariadb-java-client/3.4.1/mariadb-java-client-3.4.1.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>

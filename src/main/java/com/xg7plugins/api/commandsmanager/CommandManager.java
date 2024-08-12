@@ -22,23 +22,21 @@ public class CommandManager implements CommandExecutor, TabCompleter {
 
     private static final List<com.xg7plugins.api.commandsmanager.Command> plCommands = new ArrayList<>();
 
-    @SafeVarargs
     @SneakyThrows
-    public final void init(Class<? extends com.xg7plugins.api.commandsmanager.Command>... commands) {
+    public final void init(com.xg7plugins.api.commandsmanager.Command... commands) {
 
         Field commandMapField = Bukkit.getServer().getClass().getDeclaredField("commandMap");
         commandMapField.setAccessible(true);
         CommandMap commandMap = (CommandMap) commandMapField.get(Bukkit.getServer());
-        for (Class<? extends com.xg7plugins.api.commandsmanager.Command> commandClass : commands) {
+        for (com.xg7plugins.api.commandsmanager.Command command : commands) {
 
-            if (commandClass.getDeclaredConstructor().getAnnotation(CommandConfig.class) != null) {
+            if (command.getClass().getDeclaredConstructor().getAnnotation(CommandConfig.class) != null) {
                 if (Config.getConfig("commands") != null) {
-                    String path = commandClass.getDeclaredConstructor().getAnnotation(CommandConfig.class).enabledIf();
+                    String path = command.getClass().getDeclaredConstructor().getAnnotation(CommandConfig.class).enabledIf();
                     if (!path.isEmpty()) if (Config.getString("commands", XG7PluginManager.getPlugin().getName().toLowerCase() + "." + path) == null) continue;
                 }
             }
 
-            com.xg7plugins.api.commandsmanager.Command command = commandClass.getConstructor().newInstance();
             if (command.getSubCommands().length > 1 && Arrays.stream(command.getSubCommands()).anyMatch(SubCommand::isRequired)) {
                 throw new Exception("Required subcommand of" + command.getName() + " must be unique.");
             }
@@ -60,30 +58,35 @@ public class CommandManager implements CommandExecutor, TabCompleter {
         }
     }
 
-    @SneakyThrows
     @Override
     public boolean onCommand(@NotNull CommandSender commandSender, @NotNull Command command, @NotNull String s, @NotNull String[] strings) {
-        com.xg7plugins.api.commandsmanager.Command command1 = plCommands.stream().filter(cmd -> cmd.getName().equals(command.getName())).findFirst().get();
+        Bukkit.getScheduler().runTaskAsynchronously(XG7PluginManager.getPlugin(), () -> {
+            com.xg7plugins.api.commandsmanager.Command command1 = plCommands.stream().filter(cmd -> cmd.getName().equals(command.getName())).findFirst().get();
 
-        if (!commandSender.hasPermission(command1.getPermission())) {
-            commandSender.sendMessage("You don't have permission to execute this command.");
-            return true;
-        }
-
-        if (command.getClass().getDeclaredConstructor().getAnnotation(CommandConfig.class) != null) {
-            CommandConfig commandConfig = command.getClass().getDeclaredConstructor().getAnnotation(CommandConfig.class);
-
-            if (commandConfig.isOnlyPlayer() && !(commandSender instanceof Player)) {
-                commandSender.sendMessage("This command is only for players.");
-                return true;
+            if (!commandSender.hasPermission(command1.getPermission())) {
+                commandSender.sendMessage("You don't have permission to execute this command.");
+                return;
             }
-            if (commandConfig.isOnlyInWorld() && (!(commandSender instanceof Player) && !XG7PluginManager.getWorldsEnabled().contains(((Player)commandConfig).getWorld().getName()))) {
-                commandSender.sendMessage("This can only execute this command on world.");
-                return true;
-            }
-        }
 
-        command1.onCommand(command,commandSender,strings,s);
+            try {
+                if (command.getClass().getDeclaredConstructor().isAnnotationPresent(CommandConfig.class)) {
+                    CommandConfig commandConfig = command.getClass().getDeclaredConstructor().getAnnotation(CommandConfig.class);
+
+                    if (commandConfig.isOnlyPlayer() && !(commandSender instanceof Player)) {
+                        commandSender.sendMessage("This command is only for players.");
+                        return;
+                    }
+                    if (commandConfig.isOnlyInWorld() && (!(commandSender instanceof Player) && !XG7PluginManager.getWorldsEnabled().contains(((Player) commandConfig).getWorld().getName()))) {
+                        commandSender.sendMessage("This can only execute this command on world.");
+                        return;
+                    }
+                }
+            } catch (NoSuchMethodException e) {
+                throw new RuntimeException(e);
+            }
+
+            command1.onCommand(command, commandSender, strings, s);
+        });
         return true;
     }
 

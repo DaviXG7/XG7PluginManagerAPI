@@ -3,15 +3,14 @@ package com.xg7plugins.api.taskmanager;
 import com.xg7plugins.api.XG7PluginManager;
 import org.bukkit.Bukkit;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 
 public class TaskManager {
     private final static HashMap<String, Integer> tasksRunning = new HashMap<>();
 
-    private static void init(Task... tasks) {
-
+    public static void init(Task... tasks) {
+        Arrays.stream(tasks).forEach(TaskManager::addTask);
     }
 
     public static void addTask(Task task) {
@@ -46,7 +45,7 @@ public class TaskManager {
                 0,
                 task.getDelay()
         ).getTaskId();
-        Bukkit.getScheduler().runTaskLater(XG7PluginManager.getPlugin(), () -> {
+        Bukkit.getScheduler().runTaskLaterAsynchronously(XG7PluginManager.getPlugin(), () -> {
             cancelTask(task.getName());
             task.onFinish();
         }, task.getCooldown() * 20L);
