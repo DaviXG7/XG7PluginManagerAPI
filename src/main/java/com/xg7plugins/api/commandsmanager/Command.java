@@ -35,13 +35,4 @@ public abstract class Command {
     public abstract void onCommand(org.bukkit.command.Command command, CommandSender sender, String[] args, String label);
     public abstract List<String> onTabComplete(org.bukkit.command.Command command, CommandSender sender, String[] args, String label);
 
-    public Item getIcon() {
-        return new Item(-1, icon, Button.click(event -> {
-            if (subCommands == null) return;
-
-
-
-        }));
-    }
-
 }

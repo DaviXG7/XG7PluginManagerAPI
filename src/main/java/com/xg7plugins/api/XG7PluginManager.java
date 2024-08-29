@@ -9,6 +9,7 @@ import com.xg7plugins.api.eventsmanager.packet.PacketEventManager1_8__1_16;
 import com.xg7plugins.api.eventsmanager.packet.PacketEventManager1_7;
 import com.xg7plugins.api.taskmanager.Task;
 import com.xg7plugins.api.taskmanager.TaskManager;
+import com.xg7plugins.api.utils.Conversation;
 import com.xg7plugins.api.utils.Metrics;
 import com.xg7plugins.xg7menus.api.XG7Menus;
 import lombok.Getter;
@@ -24,19 +25,24 @@ public class XG7PluginManager {
     private static JavaPlugin plugin;
     @Getter
     private static int version;
-
+    @Getter
+    @Setter
+    private static String pluginPrefix;
     @Getter
     @Setter
     private static List<String> worldsEnabled;
+
     public static void init(JavaPlugin javaPlugin) {
         plugin = javaPlugin;
         version = Integer.parseInt(Bukkit.getServer().getVersion().split("\\.")[1].replace(")", ""));
         worldsEnabled = plugin.getConfig().getStringList("worlds");
+        pluginPrefix = plugin.getConfig().getString("plugin-prefix");
         plugin.getServer().getPluginManager().registerEvents(new EventManager(), plugin);
         if (version < 8) plugin.getServer().getPluginManager().registerEvents(new PacketEventManager1_7(), plugin);
         else if (version > 16) plugin.getServer().getPluginManager().registerEvents(new PacketEventManager1_17__1_2x(), plugin);
         else plugin.getServer().getPluginManager().registerEvents(new PacketEventManager1_8__1_16(), plugin);
         XG7Menus.inicialize(plugin);
+
     }
     public static void initMetrics(int serviceId) {
         new Metrics(plugin, serviceId);

@@ -34,7 +34,12 @@ public class TaskManager {
 
         tasksRunning.put(task.getName(), taskid);
     }
-
+    public static void runTask(Task task) {
+        Bukkit.getScheduler().runTask(XG7PluginManager.getPlugin(), task::run);
+    }
+    public static void runTaskAsync(Task task) {
+        Bukkit.getScheduler().runTaskAsynchronously(XG7PluginManager.getPlugin(), task::run);
+    }
     public static void addCooldownTask(CooldownTask task) {
         int taskid = Bukkit.getServer().getScheduler().runTaskTimerAsynchronously(
                 XG7PluginManager.getPlugin(),

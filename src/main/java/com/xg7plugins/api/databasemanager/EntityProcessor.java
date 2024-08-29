@@ -80,7 +80,7 @@ public class EntityProcessor {
     }
 
     @SneakyThrows
-    public static void insetEntity(Class<?> entityClass, Object entity) {
+    public static void insetEntity(Class<?> entityClass, Entity entity) {
         StringBuilder builder = new StringBuilder();
         builder.append("INSERT INTO " + entityClass.getSimpleName() + " VALUES (");
 
@@ -104,7 +104,7 @@ public class EntityProcessor {
             args.add(field.get(entity));
         }
         DBManager.executeUpdate(builder.toString(),args.toArray());
-        if (!childs.isEmpty()) childs.forEach(item -> insetEntity(item.getClass(), item));
+        if (!childs.isEmpty()) childs.forEach(item -> insetEntity(item.getClass(), ((Entity) item)));
     }
 
 }

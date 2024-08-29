@@ -57,7 +57,7 @@ public class PacketEventManager1_8__1_16 implements Listener {
                                 }
                             }
                             if (packet.getClass().getName().endsWith(event.packetName()))
-                                modPacket = method.invoke(object, packet);
+                                modPacket = method.invoke(object,  player, packet);
                         }
                     }
                 }
@@ -81,7 +81,7 @@ public class PacketEventManager1_8__1_16 implements Listener {
                                 }
                             }
                             if (packet.getClass().getName().endsWith(event.packetName()))
-                                modPacket = method.invoke(object, packet);
+                                modPacket = method.invoke(object,  player, packet);
                         }
                     }
                 }

@@ -1,10 +1,13 @@
 package com.xg7plugins.api.utils;
 
 import com.xg7plugins.api.Config;
+import com.xg7plugins.api.taskmanager.Task;
+import com.xg7plugins.api.taskmanager.TaskManager;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import me.clip.placeholderapi.PlaceholderAPI;
 import net.md_5.bungee.api.ChatMessageType;
+import net.md_5.bungee.api.chat.*;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -15,31 +18,125 @@ import java.awt.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+@Getter
 public class Text {
 
     private static final Pattern GRADIENT_PATTERN = Pattern.compile("\\[g#([0-9a-fA-F]{6})](.*?)\\[/g#([0-9a-fA-F]{6})]");
-    private final static Pattern HEX_PATTERN = Pattern.compile("&#([A-Fa-f0-9]{6})");
+    private static final Pattern HEX_PATTERN = Pattern.compile("&#([A-Fa-f0-9]{6})");
 
+    private String text;
+    private ComponentBuilder builder;
 
-    public static void send(String text, CommandSender sender) {
-        if (text == null || text.isEmpty()) return;
-        if (sender instanceof Player) {
-            text = text.replace("[PLAYER]", sender.getName());
-            if (text.startsWith("[ACTION] ")) {
-                sendActionBar(text.substring(9), ((Player) sender));
-                return;
+    public Text() {}
+    public Text(String text) {
+        if (Integer.parseInt(Bukkit.getServer().getVersion().split("\\.")[1].replace(")", "")) >= 16) {
+            this.text = applyGradients(text);
+            Matcher matcher = HEX_PATTERN.matcher(text);
+            while (matcher.find()) {
+                String color = text.substring(matcher.start(), matcher.end());
+                this.text = text.replace(color, net.md_5.bungee.api.ChatColor.of(color.substring(1)) + "");
+                matcher = HEX_PATTERN.matcher(text);
             }
-
-            sender.sendMessage(getFormatedText(((Player) sender), text));
-            return;
         }
-        sender.sendMessage(translateColorCodes(text));
+
+        this.text = ChatColor.translateAlternateColorCodes('&', Config.getString("config", "plugin-prefix") == null ? text : text.replace("[PREFIX]", Config.getString("config", "plugin-prefix")));
+    }
+    public Text(String text, PixelsSize centerSize) {
+        if (Integer.parseInt(Bukkit.getServer().getVersion().split("\\.")[1].replace(")", "")) >= 16) {
+            this.text = applyGradients(text);
+            Matcher matcher = HEX_PATTERN.matcher(text);
+            while (matcher.find()) {
+                String color = text.substring(matcher.start(), matcher.end());
+                this.text = text.replace(color, net.md_5.bungee.api.ChatColor.of(color.substring(1)) + "");
+                matcher = HEX_PATTERN.matcher(text);
+            }
+        }
+
+        this.text = ChatColor.translateAlternateColorCodes('&', Config.getString("config", "plugin-prefix") == null ? text : text.replace("[PREFIX]", Config.getString("config", "plugin-prefix")));
+
+        if (text.startsWith("[CENTER] ")) this.text = getCentralizedText(centerSize.getPixels(), text);
     }
 
+    public static Text format(String text) {
+        return new Text(text);
+    }
+    public static Text formatAndCenter(String text, PixelsSize size) {
+        return new Text(text, size);
+    }
+    private void setComponentBuilder() {
+        this.builder = new ComponentBuilder();
+    }
+    public static Text componentBuilder() {
+        Text text = new Text();
+        text.setComponentBuilder();
+        return text;
+    }
+    public Text addHoverEvent(HoverEvent event) {
+        this.builder.event(event);
+        return this;
+    }
+    public Text addClickEvent(ClickEvent event) {
+        this.builder.event(event);
+        return this;
+    }
+    public Text appendAndFormat(String text) {
+        this.builder.append(Text.format(text).getText());
+        return this;
+    }
+    public Text appendAndFormatWithPlaceholders(String text, Player player) {
+        this.builder.append(Text.format(text).setPlaceholders(player).getText());
+        return this;
+    }
+    public Text appendAndFormat(BaseComponent component) {
+        this.builder.append(component);
+        return this;
+    }
+    public BaseComponent[] build() {
+        return this.builder.create();
+    }
+
+    public void send(CommandSender sender) {
+        TaskManager.runTask(new Task() {
+            @Override
+            public String getName() {
+                return "text";
+            }
+
+            @Override
+            public long getDelay() {
+                return 0;
+            }
+
+            @Override
+            public void run() {
+                String finaltext = text;
+                if (sender instanceof Player) {
+                    finaltext = finaltext.replace("[PLAYER]", sender.getName());
+                    if (text.startsWith("[ACTION] ")) {
+                        finaltext = finaltext.substring(9);
+                        sendActionBar(((Player) sender));
+                        return;
+                    }
+
+                    sender.sendMessage(text);
+                    return;
+                }
+                sender.sendMessage(text);
+            }
+        });
+    }
+    public Text setPlaceholders(Player player) {
+        this.text = Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null ? PlaceholderAPI.setPlaceholders(player, text) : text;
+        return this;
+    }
     @SneakyThrows
-    public static void sendActionBar(String text, Player player) {
+    private void sendActionBar(Player player) {
         if (Integer.parseInt(Bukkit.getServer().getVersion().split("\\.")[1].replace(")", "")) >= 9) {
-            player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(getFormatedText(player, text)));
+            if (this.builder == null) {
+                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(text));
+                return;
+            }
+            player.spigot().sendMessage(ChatMessageType.ACTION_BAR, build());
             return;
         }
 
@@ -50,37 +147,13 @@ public class Text {
         Class<?> iChatBaseComponentClass = NMSUtil.getNMSClass("IChatBaseComponent");
         Class<?> chatComponentTextClass = NMSUtil.getNMSClass("ChatComponentText");
 
-        Object chatComponent = chatComponentTextClass.getConstructor(String.class).newInstance(getFormatedText(player, text));
+        Object chatComponent = chatComponentTextClass.getConstructor(String.class).newInstance(text);
         Object packet = packetPlayOutChatClass.getConstructor(iChatBaseComponentClass, byte.class)
                 .newInstance(chatComponent, (byte) 2);
 
         Object craftPlayerHandle = craftPlayerClass.getMethod("getHandle").invoke(craftPlayer);
         Object playerConnection = craftPlayerHandle.getClass().getField("playerConnection").get(craftPlayerHandle);
         playerConnection.getClass().getMethod("sendPacket", NMSUtil.getNMSClass("Packet")).invoke(playerConnection, packet);
-
-    }
-
-    public static String getFormatedText(Player player, String text) {
-        if (text.startsWith("[CENTER] ")) return translateColorCodes(getCentralizedText(PixelsSize.CHAT.getPixels(), setPlaceholders(text.substring(9), player)));
-        return translateColorCodes(setPlaceholders(text, player));
-    }
-    public static String setPlaceholders(String text, Player player) {
-        return Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null ? PlaceholderAPI.setPlaceholders(player, text) : text;
-    }
-
-    public static String translateColorCodes(String text) {
-
-        if (Integer.parseInt(Bukkit.getServer().getVersion().split("\\.")[1].replace(")", "")) >= 16) {
-            text = applyGradients(text);
-            Matcher matcher = HEX_PATTERN.matcher(text);
-            while (matcher.find()) {
-                String color = text.substring(matcher.start(), matcher.end());
-                text = text.replace(color, net.md_5.bungee.api.ChatColor.of(color.substring(1)) + "");
-                matcher = HEX_PATTERN.matcher(text);
-            }
-        }
-
-        return ChatColor.translateAlternateColorCodes('&', Config.getString("config", "plugin-prefix") == null ? text : text.replace("[PREFIX]", Config.getString("config", "plugin-prefix")));
 
     }
 
@@ -150,10 +223,8 @@ public class Text {
 
     }
     private static double[] linear(double from, double to, int max) {
-        final double[] res = new double[max];
-        for (int i = 0; i < max; i++) {
-            res[i] = from + i * ((to - from) / (max - 1));
-        }
+        double[] res = new double[max];
+        for (int i = 0; i < max; i++) res[i] = from + i * ((to - from) / (max - 1));
         return res;
     }
 
@@ -234,7 +305,7 @@ public class Text {
         MOTD(127),
         INV(75);
 
-        final int pixels;
+        private final int pixels;
 
         PixelsSize (int pixels) {
             this.pixels = pixels;
